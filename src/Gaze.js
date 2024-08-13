@@ -25,49 +25,30 @@ const Gaze = () => {
       gazefilter
         .init("./gazefilter.wasm")
         .then(() => {
+          return gazefilter.tracker.connect(); // Connect to the first available device
+        })
+        .then(() => {
           setIsInitialized(true);
           if (canvasRef.current) {
             gazefilter.visualizer.setCanvas(canvasRef.current);
             gazefilter.visualizer.setListener("filter", render);
           }
-          setupCamera();
         })
         .catch((err) => {
-          setError("Failed to initialize gaze filter.");
+          setError("Failed to initialize or connect gaze filter.");
           console.error(err);
         });
     }
-
-    return () => {
-      if (gazefilter) {
-        // gazefilter.tracker.disconnect();
-      }
-    };
   }, [gazefilter]);
-
-  const setupCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoElement = document.createElement("video");
-      videoElement.srcObject = stream;
-      videoElement.play();
-      gazefilter.tracker.setVideoElement(videoElement);
-      console.log("Camera started");
-    } catch (error) {
-      console.error("Camera access denied:", error);
-      setError("Camera access denied.");
-    }
-  };
 
   const render = (ctx, trackEvent) => {
     console.log("Rendering frame...");
-    ctx.drawImage(
-      gazefilter.tracker.videoElement(),
-      0,
-      0,
-      ctx.canvas.width,
-      ctx.canvas.height
-    );
+    // Check if video element is present
+    const videoElement = gazefilter.tracker.videoElement();
+    if (videoElement) {
+      ctx.drawImage(videoElement, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+    // Additional rendering logic for landmarks and pupils, if required
   };
 
   return (
